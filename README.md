@@ -64,4 +64,36 @@ measurements at different temperatures:
   BETA = ------- * ln(R1 / R2)         R1, R2 measured resitance values at 
          T2 - T1                       two different temperatures T1, T2	
 ```
+## Design Steps
+With the above knowledge we are now able to design two classes, one for the NTC sensor, 
+the other for the thermostat. The sensor class must know to which pin the sensor is 
+connected and how large BETA and the nominal resistance of the NTC are. Further it must 
+be known whether the NTC is connected to Vcc or to GND and how large the maximum analog 
+value of the ADC is. The constructor of `NTCsensor` then looks like this. The member 
+variables are initialized, the constant Roo is calculated and the pin mode of the 
+analog pin is set. 
+```
+  NTCsensor(uint8_t pinNTC, uint16_t beta, uint16_t Ro, uint16_t Rs, bool ntcToGround = false, uint16_t analogMax = 1023)  :
+    _pinNTC(pinNTC), _beta(beta), _Ro(Ro), _Rs(Rs), _ntcToGround(ntcToGround), _analogMax(analogMax)
+    {
+      pinMode(_pinNTC, INPUT);
+      _Roo = _Ro * exp(-(float)_beta / (_To - _Tabs)); // calculate the resistance of the NTC for T --> oo
+    }
+```
+Of course, we would like to be able to query the temperature in °C, °F and °K and 
+also output the parameters of the NTC. The corresponding methods are provided for 
+this purpose.
 
+A thermostat is really nothing more than a switch that triggers appropriate actions 
+at certain temperatures. That is why we pass to the constructor of the `NTCthermostat` 
+class only a reference to a sensor object and the references to two functions that 
+are called when the lower or upper temperature limits are reached. 
+```
+  typedef void (*CallbackFunction)();
+
+  NTCthermostat(NTCsensor &ntc, CallbackFunction onLowTemp, CallbackFunction onHighTemp) : 
+      _ntc(ntc), _onLowTemp(onLowTemp), _onHighTemp(onHighTemp)  {}
+```
+The temperature is measured periodically in the loop() method. The measurement 
+interval and the two temperature limits are set with corresponding methods. All 
+other details can be seen in the code. 
