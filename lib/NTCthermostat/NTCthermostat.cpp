@@ -41,15 +41,8 @@ void NTCthermostat::loop()
     if (millis() % _msInterval == 0)
     {
         float t = _ntc.getCelsius();
-        if (t < _lowerLimit)
-        {
-            _onLowTemp();
-        }
-
-        if (t > _upperLimit)
-        {
-            _onHighTemp();
-        }
+        if (t < _lowerLimit) _onLowTemp();
+        if (t > _upperLimit) _onHighTemp();
         // _ntc.printSensorValues(); 
     }
 }

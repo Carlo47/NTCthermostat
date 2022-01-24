@@ -15,7 +15,8 @@
 #include <Arduino.h>
 #include "NTCsensor.h"
 
-typedef void (*CallbackFunction)();
+//typedef void (*CallbackFunction)();
+using CallbackFunction = void (&)();
 
 class NTCthermostat
 {
