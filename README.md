@@ -96,4 +96,5 @@ are called when the lower or upper temperature limits are reached.
 ```
 The temperature is measured periodically in the loop() method. The measurement 
 interval and the two temperature limits are set with corresponding methods. All 
-other details can be seen in the code. 
+other details can be seen in the code. The Program compiles for Arduino UNO R3,
+Wemos D1 and ESP32 DoIt DevKit V1 by switching the ***PlatformIO Project Environment***.
