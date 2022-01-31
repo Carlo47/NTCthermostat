@@ -157,7 +157,7 @@ class NTCthermostat
 ```
 The temperature is measured periodically in the loop() method. The measurement 
 interval and the two temperature limits are set with corresponding methods. All 
-other details can be seen in the code. The program comiles for Arduino UNO R3, 
+other details can be seen in the code. The program compiles for Arduino UNO R3, 
 Wemos D1 R2 and DoIt ESP32 DevKit V1 by simply switching the ***PlatformIO Project Environment***.
 
 ## User Interface
@@ -166,7 +166,7 @@ values periodically. The displayed outputs show that the measured
 values differ considerably.
 
 ---
-Outpu for UNO R3 and Wemos D1
+Output for UNO R3 and Wemos D1
 
 ![UnoWemos](images/Values_UnoWemos.jpg)
 
