@@ -163,7 +163,7 @@ Wemos D1 R2 and DoIt ESP32 DevKit V1 by simply switching the ***PlatformIO Proje
 ## User Interface
 The program simply outputs the parameter settings and the measured 
 values periodically. The displayed outputs show that the measured 
-values differ considerably.
+values differ considerably from board to board.
 
 ---
 Output for UNO R3 and Wemos D1
