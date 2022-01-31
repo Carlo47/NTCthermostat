@@ -16,26 +16,34 @@
 #include "NTCsensor.h"
 
 //typedef void (*CallbackFunction)();
-using CallbackFunction = void (&)();
+using Callback = void (&)();
 
 class NTCthermostat
 {
     public:
-        NTCthermostat(NTCsensor &ntc, CallbackFunction onLowTemp, CallbackFunction onHighTemp) : 
-            _ntc(ntc), _onLowTemp(onLowTemp), _onHighTemp(onHighTemp)  {}
+        NTCthermostat(NTCsensor &ntcSensor, Callback onLowTemp, Callback onHighTemp, Callback onDataReady) : 
+                      _ntcSensor(ntcSensor), _onLowTemp(onLowTemp), _onHighTemp(onHighTemp), _onDataReady(onDataReady) 
+                       {}
 
-        void  setLimits(float lower, float upper);
-        void  getLimits(float &lower, float &upper);
-        void  setInterval(uint32_t msInterval);
-        float getCelsius();
         void  loop();
+        void  enable();
+        void  disable();
+        bool  isEnabled();
+        void  setLimitLow(float tLimitLow);
+        void  setLimitHigh(float tLimitHigh);
+        void  setRefreshInterval(uint32_t msInterval);
+        float getLimitLow();
+        float getLimitHigh();
+        uint32_t getRefreshInterval();
 
     private:
-        NTCsensor  &_ntc;
-        float    _lowerLimit = 18.0;
-        float    _upperLimit = 22.0;
-        uint32_t _msInterval = 5000;
-        CallbackFunction _onLowTemp;    // called when temperature is below lowwer limit
-        CallbackFunction _onHighTemp;   // called when temperature is above upper limit 
+        bool     _isEnabled = false;
+        float    _tLimitLow  = 18.0;
+        float    _tLimitHigh = 21.0;
+        uint32_t _msRefresh = 5000;
+        NTCsensor &_ntcSensor;
+        Callback _onLowTemp;    // called when temperature is below lowwer limit
+        Callback _onHighTemp;   // called when temperature is above upper limit 
+        Callback _onDataReady;
 };
 #endif

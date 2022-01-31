@@ -8,7 +8,7 @@
  *              series resistance. The temperature is then obtained with the help of the 
  *              Steinhart-Hart equation.
  *                                                
- * Board        Arduino uno, Wemos D1 R2
+ * Board        Arduino UNO R3, Wemos D1 R2, ESP32 DevKit V1
  * 
  * Wiring          ---+-- Vcc                            ---+--- Vcc
  *                    |                                     |
@@ -28,7 +28,10 @@
  * 
  * Remarks      The voltage Vcc doesn't matter. The accuracy of the temperature
  *              measurement depends on how exact we know the parameters of the
- *              NTC resistor (Ro at T=25°C and BETA). 
+ *              NTC resistor (Ro at T=25°C and BETA).
+ * 
+ *              Vcc:  Connect the resistors to GND and 3.3V for Wemos D1 and ESP32
+ *                    Connect the resistors to GND and 5V   for Arduino UNO  
  * 
  * Equations    R(T) = Ro * exp(BETA * (1/T - 1/To)  Steinhart–Hart equation  
  *              To     Nominal temperature. Normally 25°C, 🚩 for calculations use degrees Kelvin 🚩
@@ -68,58 +71,64 @@
 /**
  * Read sensor and update calculated values
  */
-void NTCsensor::_update()
+void NTCsensor::_readSensor()
 {
-    _analogValue = analogRead(_pinNTC);
-    if (_analogValue < 1)      // only if NTC to ground and short-circuited
-    {
-        _tKelvin = 1.0 / 0.0;  // T = oo
-        _Rt = _Roo;            // Roo = R(T-->oo)
-    }
-    else
-    {
-        _k = (float)_analogMax / (float)_analogValue - 1.0;
-        _k = _ntcToGround == true ? 1.0 / _k : _k;
-        _Rt = (float)_Rs * _k;
-        _tKelvin = (float)_beta / log(_Rt/ _Roo);  // calculate T from Rt, Roo and BETA       
-    }
-    _tCelsius = _tKelvin + _Tabs;                  // convert Kelvin to Celcius
-    _tFahrenheit = _tCelsius * 9.0 / 5.0 + 32.0;   // convert Celcius to Fahrenheit
+    _analogValue = analogRead(_adc.pin);
+    _v = (_adc.Vref - _adc.Voff) / (double)_adc.Amax;
+    _vin = (_analogValue * _v) + _adc.Voff;
+    _k = _vin / ( _adc.Vcc - _vin);
+    if (_adc.ntcToGround == false) _k = 1.0 / _k;
+    _Rt = (double)_ntc.Rs * _k;
+    _tKelvin = (double)_ntc.beta / log(_Rt/_Roo);  // Calculate  T from Rt, Roo and BETA
+    _tCelsius = _tKelvin + _Tabs;                  // Convert Kelvin to Celcius
+    _tFahrenheit = _tCelsius * 9.0 / 5.0 + 32.0;   // Convert Celcius to Fahrenheit 
 }
 
-float NTCsensor::getCelsius()
+double NTCsensor::getCelsius()
 {
-    _update();
+    _readSensor();
     return _tCelsius;
 }
 
-float NTCsensor::getKelvin()
+double NTCsensor::getKelvin()
 {
-    _update();
+    _readSensor();
     return _tKelvin;
 }
 
-float NTCsensor::getFahrenheit()
+double NTCsensor::getFahrenheit()
 {
-    _update();
+    _readSensor();
     return _tFahrenheit;
 }
 
-float NTCsensor::getRt()
+double NTCsensor::getRt()
 {
-    _update();
+    _readSensor();
     return _Rt;
 }
 
-float NTCsensor::getRoo()
+double NTCsensor::getRoo()
 {
     return _Roo;
 }
 
-float NTCsensor::getAnalogValue()
+double NTCsensor::getAnalogValue()
 {
-    _update();
-    return (_analogValue);
+    _readSensor();
+    return _analogValue;
+}
+
+double NTCsensor::getFactorV()
+{
+    _readSensor();
+    return _v;
+}
+
+double NTCsensor::getVin()
+{
+    _readSensor();
+    return _vin;
 }
 
 /**
@@ -135,14 +144,28 @@ float NTCsensor::getAnalogValue()
  * analogMax   maximum value of Arduinos ADC
  * ntcToGround true if NTC is connected to ground, if connected to Vcc false
  */
-void NTCsensor::printSensorParams()
+void NTCsensor::printParams()
 {
-    char buf[240];
-    _update();
-    snprintf(buf, sizeof(buf)/sizeof(buf[0]), 
-        "Sensor Parameters\n-----------------\nbeta        %d\nRo          %d\nRs          %d\nRoo         %11.5e\nk           %7.5f\nTo          %7.2f °C\nTabs        %.2f °C\nanalogMax   %d\nntcToGround %s\r\n",
-        _beta, _Ro, _Rs, _Roo, _k, _To, _Tabs, _analogMax, _ntcToGround ? "true" : "false");
-    Serial.println(buf);
+    char buf[272];
+
+    snprintf(buf, sizeof(buf), R"(--- NTC Parameters ---
+beta        %d
+Ro         %d
+Rs         %d
+Roo      %7.5f
+To       %7.2f °C
+Tabs     %7.2f °C
+--- ADC Parameters ---
+Pin         %d
+Analog Max  %d
+NTC to GND  %s
+Vcc        %5.0f mV
+Vref       %5.0f mV
+Voff       %5.0f mV
+)",
+_ntc.beta, _ntc.Ro, _ntc.Rs, _Roo, _To, _Tabs, 
+_adc.pin, _adc.Amax, _adc.ntcToGround ? "true" : "false", _adc.Vcc, _adc.Vref, _adc.Voff );
+Serial.println(buf);
 }
 
 /**
@@ -154,11 +177,20 @@ void NTCsensor::printSensorParams()
  * Tf           calculated temperature in °-Fahrenheit
  * Tk           calculated temperature in °-Kelvin
  */
-void NTCsensor::printSensorValues()
+void NTCsensor::printValues()
 {
-    char buf[120];
-    snprintf(buf, sizeof(buf)/sizeof(buf[0]),
-        "Sensor Readings\n---------------\nanalogValue %d\nRt %5.0f\nTc %5.1f °C\nTf %5.1f °F\nTk %5.1f °K",
-        _analogValue, _Rt, _tCelsius, _tFahrenheit, _tKelvin);
-    Serial.println(buf);
+    char buf[184];
+
+    _readSensor();
+    snprintf(buf, sizeof(buf), R"(--- Sensor Readings ---
+Analog Value %d
+v        %7.5f
+Vin      %7.0f mV
+k        %7.5f
+Rt         %5.0f
+Tc         %5.1f °C
+Tf         %5.1f °F
+Tk         %5.1f °K
+)", _analogValue, _v, _vin, _k, _Rt, _tCelsius, _tFahrenheit, _tKelvin);
+Serial.println(buf);
 }

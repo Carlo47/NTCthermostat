@@ -14,35 +14,53 @@
 
 #include "NTCthermostat.h"
 
-void NTCthermostat::setLimits(float lower, float upper)
+void NTCthermostat::setLimitLow(float tLimitLow)
 {
-    _lowerLimit = lower;
-    _upperLimit = upper;
+    _tLimitLow = tLimitLow;
 }
 
-void NTCthermostat::getLimits(float &lower, float &upper)
+void NTCthermostat::setLimitHigh(float tLimitHigh)
 {
-    lower = _lowerLimit;
-    upper = _upperLimit;
+    _tLimitHigh = tLimitHigh;
 }
 
-void NTCthermostat::setInterval(uint32_t msInterval)
+float NTCthermostat::getLimitLow()
 {
-    _msInterval = msInterval;
+    return(_tLimitLow);
 }
 
-float NTCthermostat::getCelsius()
+float NTCthermostat::getLimitHigh()
 {
-    return _ntc.getCelsius();
+    return(_tLimitHigh);
+}
+
+void NTCthermostat::setRefreshInterval(uint32_t msInterval)
+{
+    _msRefresh = msInterval;
 }
 
 void NTCthermostat::loop()
 {
-    if (millis() % _msInterval == 0)
-    {
-        float t = _ntc.getCelsius();
-        if (t < _lowerLimit) _onLowTemp();
-        if (t > _upperLimit) _onHighTemp();
-        // _ntc.printSensorValues(); 
-    }
+  if((millis() % _msRefresh) == 0 && _isEnabled) 
+  {
+    float t = _ntcSensor.getCelsius();
+    _onDataReady();
+    if (t < _tLimitLow) _onLowTemp();
+    if (t > _tLimitHigh) _onHighTemp();
+  }
+}
+
+void NTCthermostat::enable()
+{
+  _isEnabled = true;
+}
+
+void NTCthermostat::disable()
+{
+  _isEnabled = false;
+}
+
+bool NTCthermostat::isEnabled()
+{
+  return _isEnabled;
 }

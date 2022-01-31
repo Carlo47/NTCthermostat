@@ -30,79 +30,126 @@
  * 
  * 
  * Remarks      Analog Temp module from Elegoo Sensor Kit
- *                         .----------.              
+ *                         .-----------.  
+ *                         |         - |             
  *                     .---|   Ro 10k  |--- GND   Analog NTC-Module
  *                    O    |   B 2800  |--- Vcc   NTC to GND, 10k to Vcc
- *                     `---|   Rs 10k  |--- A0    
- *                          `----------´     
+ *                     `---|   Rs 10k  |--- A0
+ *                         |         S |       
+ *                         '-----------'     
  */
 
-#include <Arduino.h>
 #include "NTCthermostat.h"
 
-#define PIN_NTC       A0     // analog input pin
-#define ANALOG_MAX    1023   // Arduinos ADC range is 0..1023
+const uint8_t PIN_NTC     = A0;     // analog input pin (A0 UNO/WEMOS, 34 ESP32)
+const uint16_t ANALOG_MAX = 1023;   // 1023 UNO/WEMOS, 4095 ESP32
 
 // Nominal values of the Elegoo NTC module
-#define BETA          2800   // characteristic constant of NTC
-#define Ro            10000  // nominal resistance of NTC 
-#define Rs            10000  // series resistance
-#define NTC_TO_GROUND true
+const uint16_t BETA = 2800;   // characteristic constant of NTC
+const uint16_t Ro   = 10000;  // nominal resistance of NTC 
+const uint16_t Rs   = 10000;  // series resistance
+bool NTC_TO_GROUND  = false;   // NTC is connected to ground
 
-// Forward declaration of the 2 callbacks to be supplied to the thermostats constructor
-void onLowerLimit();
-void onUpperLimit();
- 
-NTCsensor     myNTC(PIN_NTC, BETA, Ro, Rs, NTC_TO_GROUND, ANALOG_MAX);   // NTCsensor object
-NTCthermostat myThermostat(myNTC, onLowerLimit, onUpperLimit);           // NTCthermostat object
-bool heatingIsOn = false;                                                // variable for the state of the heating
+ParamsNTC ntcRs10k  = { 10000, 10000, 2800 };
+ParamsNTC ntcRs20k  = { 20000, 10000, 2800 };
+
+#ifdef ESP32
+  ParamsADC adcEsp32_0   = { 34, true, 4095, ADC_0db,   3300.0, 1100.0,  65.0 };
+  ParamsADC adcEsp32_2_5 = { 34, true, 4095, ADC_2_5db, 3300.0, 1300.0,  65.0 };
+  ParamsADC adcEsp32_6   = { 34, true, 4095, ADC_6db,   3300.0, 1800.0,  90.0 };
+  ParamsADC adcEsp32_11  = { 34, true, 4095, ADC_11db,  3300.0, 3200.0, 130.0 };
+#else
+  ParamsADC adcUno   = { A0, true, 1023, 5000.0, 5000.0, 0.0};
+  ParamsADC adcWemos = { A0, true, 1023, 3300.0, 3200.0, -41.0};
+#endif
+
+// Forward declaration of the 3 callbacks
+void turnHeatingOn();
+void turnHeatingOff();
+void processData();
+
+NTCsensor     ntcSensor(ntcRs10k, adcUno);
+NTCthermostat thermostat(ntcSensor, turnHeatingOn, turnHeatingOff, processData); // NTCthermostat object
+bool heatingIsOn = false;                                                   // variable for the state of the heating
+
 
 /**
- * To be performed when temperature drops below lower limit
+ * Called when temperature drops below low limit
  */
-void onLowerLimit()
-{
-  if (! heatingIsOn)
+void turnHeatingOn()
   {
-    Serial.print(myThermostat.getCelsius());
-    Serial.println(" °C: switch heating on");
-    heatingIsOn = true;
+    char buf[80];
+    if (! heatingIsOn)
+    {
+      snprintf(buf, sizeof(buf), "Turn heating on, temperature dropped below limit of %4.1f : %4.1f °C", 
+              (double)thermostat.getLimitLow(), (double)ntcSensor.getCelsius());
+      Serial.println(buf);
+      digitalWrite(LED_BUILTIN, HIGH);            // Simulates turning heating on
+      heatingIsOn = true;
+    }
   }
+
+/**
+ * Called when tempereature exceeds high limit
+ */
+void turnHeatingOff()
+  {
+    char buf[80];
+    if (heatingIsOn)
+    {
+      snprintf(buf, sizeof(buf), "Turn heating off, temperature exeeds limit of %4.1f : %4.1f °C", 
+              (double)thermostat.getLimitHigh(), (double)ntcSensor.getCelsius());
+      Serial.println(buf);
+      digitalWrite(LED_BUILTIN, LOW);  // Simulates turning off heating
+      heatingIsOn = false;
+    }
+  }
+
+void showValues()
+{
+  char buf[32];
+  ntcSensor.printParams();
+  ntcSensor.printValues();
+  snprintf(buf, sizeof(buf), "Heating is %s\n", heatingIsOn ? "ON" : "OFF");
+  Serial.println(buf);
 }
 
 /**
- * To be performed when temperature rises above upper limit
+ * Called every msRefresh milliseconds
+ * Do something with the sensor readings
  */
-void onUpperLimit()
+void processData()
 {
-  if (heatingIsOn)
-  {
-    Serial.print(myThermostat.getCelsius());
-    Serial.println(" °C: switch heating off");
-    heatingIsOn = false;
-  }
+  showValues();
 }
 
 /**
- * Print temperature every N milliseconds
+ * Show default pins of SPI and I2C interface
  */
-void printTemperature(uint32_t every_N_ms)
+void ShowSPIandI2CdefaultPins()
 {
-  if (millis() % every_N_ms == 0)
-  {
-    myNTC.printSensorValues();
-  }
+  char buf[160];
+  snprintf(buf, sizeof(buf), R"(--- SPI / I2C default pins ---
+SPI MOSI = %d
+SPI MISO = %d
+SPI SCK  = %d
+SPI SS   = %d
+I2C SCL  = %d
+I2C SDA  = %d
+)", MOSI, MISO, SCK, SS, SCL, SDA);
+  Serial.print(buf);
 }
 
 void setup() 
 {
   Serial.begin(115200);
-  myThermostat.setLimits(25.0, 30.0);  // sets lower and upper limit to switch a heating on or off
-  myThermostat.setInterval(1000);      // sets the refresh interval of the temperature measurement
+  thermostat.setLimitLow(21.0);
+  thermostat.setLimitHigh(22.0);       // sets lower and upper limit to switch a heating on or off
+  thermostat.setRefreshInterval(5000); // sets the refresh interval of the temperature measurement
+  thermostat.enable();
 } 
 
 void loop()
 {
-  myThermostat.loop();     // checks the temperature limits in the cycle of the set interval
-  printTemperature(10000); // print sensor readings every 10 seconds
+  thermostat.loop();     // checks the temperature limits in the cycle of the set interval
 }
