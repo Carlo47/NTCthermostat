@@ -1,6 +1,6 @@
 /**
  * Program      ntcThermostat.cpp
- * Author       2021-05-13 Charles Geiser
+ * Author       2022-01-31 Charles Geiser (https://www.dodeka.ch)
  * 
  * Purpose      The program shows how to regulate the room temperature or the temperature 
  *              of a closed container with the help of the class NTCthermostat.
@@ -34,30 +34,30 @@
  *                         |         - |             
  *                     .---|   Ro 10k  |--- GND   Analog NTC-Module
  *                    O    |   B 2800  |--- Vcc   NTC to GND, 10k to Vcc
- *                     `---|   Rs 10k  |--- A0
+ *                     `---|   Rs 10k  |--- analog input
  *                         |         S |       
- *                         '-----------'     
+ *                         '-----------'  
+ * 
+ * Analog input pins       Arduino Uno R3      : A0 = 14
+ *                         Wemos D1 R2         : A0 = 17
+ *                         Doit ESP32 DevKit V1: A6 = 34 
+ * 
+ * Build flags             To use the snprintf function for the Arduino Uno, 
+ *                         these build flags have to be set:  
+ *                         build_flags = -Wl,-u,vfprintf -lprintf_flt -lm
+ *                         (see platformio.ini) 
  */
 
 #include "NTCthermostat.h"
 
-const uint8_t PIN_NTC     = A0;     // analog input pin (A0 UNO/WEMOS, 34 ESP32)
-const uint16_t ANALOG_MAX = 1023;   // 1023 UNO/WEMOS, 4095 ESP32
-
-// Nominal values of the Elegoo NTC module
-const uint16_t BETA = 2800;   // characteristic constant of NTC
-const uint16_t Ro   = 10000;  // nominal resistance of NTC 
-const uint16_t Rs   = 10000;  // series resistance
-bool NTC_TO_GROUND  = false;   // NTC is connected to ground
-
-ParamsNTC ntcRs10k  = { 10000, 10000, 2800 };
-ParamsNTC ntcRs20k  = { 20000, 10000, 2800 };
+ParamsNTC ntcRs10k  = { 10000, 10000, 2800 }; // Elegoo NTC module
+ParamsNTC ntcRs20k  = { 20000, 10000, 2800 }; // Elegoo NTC module with additional 10k to Vcc
 
 #ifdef ESP32
-  ParamsADC adcEsp32_0   = { 34, true, 4095, ADC_0db,   3300.0, 1100.0,  65.0 };
-  ParamsADC adcEsp32_2_5 = { 34, true, 4095, ADC_2_5db, 3300.0, 1300.0,  65.0 };
-  ParamsADC adcEsp32_6   = { 34, true, 4095, ADC_6db,   3300.0, 1800.0,  90.0 };
-  ParamsADC adcEsp32_11  = { 34, true, 4095, ADC_11db,  3300.0, 3200.0, 130.0 };
+  ParamsADC adcEsp32_0   = { A6, true, 4095, ADC_0db,   3300.0, 1100.0,  65.0 };
+  ParamsADC adcEsp32_2_5 = { A6, true, 4095, ADC_2_5db, 3300.0, 1300.0,  65.0 };
+  ParamsADC adcEsp32_6   = { A6, true, 4095, ADC_6db,   3300.0, 1800.0,  90.0 };
+  ParamsADC adcEsp32_11  = { A6, true, 4095, ADC_11db,  3300.0, 3200.0, 130.0 };
 #else
   ParamsADC adcUno   = { A0, true, 1023, 5000.0, 5000.0, 0.0};
   ParamsADC adcWemos = { A0, true, 1023, 3300.0, 3200.0, -41.0};

@@ -1,6 +1,6 @@
 /**
  * Class        NTCsensor.cpp
- * Author       2021-05-13 Charles Geiser (https://www.dodeka.ch)
+ * Author       2022-01-31 Charles Geiser (https://www.dodeka.ch)
  *
  * Purpose      Implements the class NTCsensor which measures the voltage at the midpoint
  *              of a voltage divider consisting of a thermistor (NTC) and a series resistor.

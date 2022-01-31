@@ -1,6 +1,6 @@
 /**
  * Header       NTCsensor.h
- * Author       2021-05-13 Charles Geiser (https://www.dodeka.ch)
+ * Author       2022-01-31 Charles Geiser (https://www.dodeka.ch)
  * 
  * Purpose      Declaration of the class NTCsensor
  * 
