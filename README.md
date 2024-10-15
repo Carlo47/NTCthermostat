@@ -42,7 +42,7 @@ follows:
   Rt = Rs * 1/k (NTC to GND)            Rt = Rs * k (NTC to Vcc)
 ```
 Now we know the resistance of the NTC. But how do we calculate the temperature 
-from this? The formula of Steinhart-Hart helps us here ( [see NTC](http://www.resistorguide.com/ntc-thermistor/#Voltage-current_characteristic) ) : 
+from this? The Beta-Formula helps us here ( [see NTC](http://www.resistorguide.com/ntc-thermistor/#Voltage-current_characteristic) ) : 
 ```
   R(T) = Ro * exp(BETA * (1/T - 1/To)  Steinhart–Hart equation
   ===================================  
@@ -55,7 +55,7 @@ from this? The formula of Steinhart-Hart helps us here ( [see NTC](http://www.re
   
   T    = BETA / ln(Rt / Roo)           Temperature as a function of measured resistance
 ```
-In the Steinhart-Hart equation BETA denotes the characteristic parameter of the NTC. 
+In the Beta-Formula $\beta$ denotes the characteristic parameter of the NTC. 
 It can be taken from the data sheet of the NTC or calculated from 2 resistance 
 measurements at different temperatures: 
 ```
