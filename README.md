@@ -44,24 +44,24 @@ follows:
 Now we know the resistance of the NTC. But how do we calculate the temperature 
 from this? The Beta-Formula helps us here ( [see NTC](http://www.resistorguide.com/ntc-thermistor/#Voltage-current_characteristic) ) : 
 ```
-  R(T) = Ro * exp(BETA * (1/T - 1/To)  Steinhart–Hart equation
+  R(T) = Ro * exp(BETA * (1/T - 1/To)   BETA-Formula
   ===================================  
   To     Nominal temperature, normally 25°C 🚩 for calculations use degrees Kelvin 🚩
   Ro     Resistance of the NTC resistor at nominal temperature R(To)
  
-  Roo  = Ro * exp(-BETA / To)          Resistance for T --> oo
+  Roo  = Ro * exp(-BETA / To)           Resistance for T --> oo
 
-  Rt   = Roo * exp(BETA / T)           Resistance at temperature T
+  Rt   = Roo * exp(BETA / T)            Resistance at temperature T
   
-  T    = BETA / ln(Rt / Roo)           Temperature as a function of measured resistance
+  T    = BETA / ln(Rt / Roo)            Temperature as a function of measured resistance
 ```
 In the Beta-Formula $\beta$ denotes the characteristic parameter of the NTC. 
 It can be taken from the data sheet of the NTC or calculated from 2 resistance 
 measurements at different temperatures: 
 ```
          T2 * T1
-  BETA = ------- * ln(R1 / R2)         R1, R2 measured resitance values at 
-         T2 - T1                       two different temperatures T1, T2	
+  BETA = ------- * ln(R1 / R2)          R1, R2 measured resitance values at 
+         T2 - T1                        two different temperatures T1, T2	
 ```
 
 ## Comparing the Analog to Digital Converters on different boards
